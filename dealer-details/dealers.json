@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "city": "El Paso",
+    "state": "Texas",
+    "st": "TX",
+    "address": "3 Wave Street",
+    "zip": "79968",
+    "lat": 31.7997,
+    "long": -106.4475,
+    "short_name": "Holdlamis",
+    "full_name": "Holdlamis Car Dealership"
+  },
+  {
+    "id": 2,
+    "city": "Minneapolis",
+    "state": "Minnesota",
+    "st": "MN",
+    "address": "40203 Fallview Trail",
+    "zip": "55488",
+    "lat": 44.9778,
+    "long": -93.2650,
+    "short_name": "Temp",
+    "full_name": "Temp Auto Dealership"
+  }
+]
