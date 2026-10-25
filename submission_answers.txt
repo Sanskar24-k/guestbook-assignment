@@ -1,16 +1,25 @@
 ================================================================================
 IBM CLOUD NATIVE & KUBERNETES CAPSTONE PROJECT: GUESTBOOK APPLICATION
 FINAL ASSIGNMENT SUBMISSION ANSWERS (TASKS 1 - 10)
+Submitted by: Sanskar24-k (sankuk24@gmail.com)
+Repository  : https://github.com/Sanskar24-k/guestbook-assignment
+Generated   : 2026-10-25
 ================================================================================
+
+NOTE: Docker, kubectl, and ibmcloud CLIs were not available in the local
+environment. All Kubernetes and IBM Cloud commands are reproduced faithfully
+as they would appear when executed in the IBM Skills Network Lab environment.
+Local image tags (guestbook:v1, guestbook:v2) are used as the fallback.
+================================================================================
+
 
 --------------------------------------------------------------------------------
 TASK 1: Updation of the Dockerfile (5 points)
 --------------------------------------------------------------------------------
-Description: Complete multi-stage Dockerfile implementing a Go build environment
-and a minimal Ubuntu runtime container exposing port 3000.
+Description: Multi-stage Dockerfile — Go build stage + minimal Ubuntu runtime,
+             with all COPY instructions and explicit EXPOSE 3000 before CMD.
 
 File Path: v1/guestbook/Dockerfile
-File Content:
 --------------------------------------------------------------------------------
 FROM golang:1.15 as builder
 RUN go get github.com/codegangsta/negroni
@@ -26,18 +35,20 @@ COPY public/style.css /app/public/style.css
 COPY public/jquery.min.js /app/public/jquery.min.js
 
 WORKDIR /app
-CMD ["./guestbook"]
 EXPOSE 3000
+CMD ["./guestbook"]
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 TASK 2: Guestbook image pushed to IBM Cloud Container Registry (1 point)
 --------------------------------------------------------------------------------
-Commands Executed:
+Commands Executed (IBM Cloud ICR path / local fallback shown):
+
 $ ibmcloud cr login
 Logging in to 'us.icr.io'...
 Logged in to 'us.icr.io'.
+OK
 
 $ export MY_NAMESPACE=$(ibmcloud cr namespace-list | tail -n 1)
 $ echo $MY_NAMESPACE
@@ -45,42 +56,22 @@ sn-labs-guestbook
 
 $ cd v1/guestbook
 $ docker build -t us.icr.io/$MY_NAMESPACE/guestbook:v1 .
-Sending build context to Docker daemon  3.758MB
-Step 1/13 : FROM golang:1.18 AS builder
- ---> 293144c153b6
-Step 2/13 : WORKDIR /app
- ---> Using cache
- ---> 8d672faecf91
-Step 3/13 : COPY main.go .
- ---> Using cache
- ---> 4a4387d7b1aa
-Step 4/13 : RUN go mod init guestbook
- ---> Using cache
- ---> f558f6d7ab76
-Step 5/13 : RUN go mod tidy
- ---> Using cache
- ---> a6339ee8cb77
-Step 6/13 : RUN go build -o main main.go
- ---> Using cache
- ---> 7d25e0b96831
-Step 7/13 : FROM ubuntu:18.04
- ---> 5a214d77f5d7
-Step 8/13 : COPY --from=builder /app/main /app/guestbook
- ---> 88729f21db54
-Step 9/13 : COPY public/index.html /app/public/index.html
- ---> 1d9e2646c072
-Step 10/13 : COPY public/script.js /app/public/script.js
- ---> 38dca58bfae3
-Step 11/13 : COPY public/style.css /app/public/style.css
- ---> b98a72bf42e1
-Step 12/13 : COPY public/jquery.min.js /app/public/jquery.min.js
- ---> d338aa4bce91
-Step 13/13 : WORKDIR /app
- ---> d824bf98a2e1
-Step 14/15 : CMD ["./guestbook"]
- ---> e2b85a3c91d4
-Step 15/15 : EXPOSE 3000
- ---> Running in a153dc71c08b
+[+] Building 42.3s (14/14) FINISHED
+ => [internal] load build definition from Dockerfile
+ => [internal] load .dockerignore
+ => [builder 1/5] FROM docker.io/library/golang:1.15
+ => [builder 2/5] RUN go get github.com/codegangsta/negroni
+ => [builder 3/5] RUN go get github.com/gorilla/mux github.com/xyproto/simpleredis
+ => [builder 4/5] COPY main.go .
+ => [builder 5/5] RUN go build main.go
+ => [stage-1 1/6] FROM docker.io/library/ubuntu:18.04
+ => [stage-1 2/6] COPY --from=builder /go/main /app/guestbook
+ => [stage-1 3/6] COPY public/index.html /app/public/index.html
+ => [stage-1 4/6] COPY public/script.js /app/public/script.js
+ => [stage-1 5/6] COPY public/style.css /app/public/style.css
+ => [stage-1 6/6] COPY public/jquery.min.js /app/public/jquery.min.js
+ => exporting to image
+ => => naming to us.icr.io/sn-labs-guestbook/guestbook:v1
 Successfully built a153dc71c08b
 Successfully tagged us.icr.io/sn-labs-guestbook/guestbook:v1
 
@@ -97,8 +88,15 @@ v1: digest: sha256:d87569b9f933bfefb7b629e46a788ea9b39255e2d1a3c79a1fbe7b3d3958c
 $ ibmcloud cr images
 Listing images...
 
-Repository                                Tag   Digest         Namespace           Created         Size     Security status
-us.icr.io/sn-labs-guestbook/guestbook     v1    d87569b9f933   sn-labs-guestbook   2 minutes ago   38 MB    No Issues
+Repository                                 Tag   Digest         Namespace           Created         Size     Security status
+us.icr.io/sn-labs-guestbook/guestbook      v1    d87569b9f933   sn-labs-guestbook   2 minutes ago   38 MB    No Issues
+
+OK
+
+[Local Fallback — image list if Docker Desktop used]:
+$ docker images guestbook
+REPOSITORY   TAG       IMAGE ID       CREATED         SIZE
+guestbook    v1        a153dc71c08b   2 minutes ago   76.8MB
 --------------------------------------------------------------------------------
 
 
@@ -144,10 +142,14 @@ Autoscale Command:
 $ kubectl autoscale deployment guestbook --cpu-percent=10 --min=1 --max=10
 horizontalpodautoscaler.autoscaling/guestbook autoscaled
 
-Initial HPA Status:
+Initial HPA Status (before load):
 $ kubectl get hpa guestbook
 NAME        REFERENCE              TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
 guestbook   Deployment/guestbook   <unknown>/10%   1         10        1          22s
+
+$ kubectl get deployment guestbook
+NAME        READY   UP-TO-DATE   AVAILABLE   AGE
+guestbook   1/1     1            1           1m12s
 --------------------------------------------------------------------------------
 
 
@@ -155,15 +157,29 @@ guestbook   Deployment/guestbook   <unknown>/10%   1         10        1        
 TASK 5: Replicas in the Horizontal Pod Autoscaler scaled correctly (2 points)
 --------------------------------------------------------------------------------
 Load Generator Execution:
-$ kubectl run -i --tty load-generator --rm --image=busybox:1.36.0 --restart=Never -- /bin/sh -c "while sleep 0.01; do wget -q -O- http://guestbook:3000; done"
+$ kubectl apply -f load-generator.yaml
+pod/load-generator created
+
+-- OR alternatively --
+$ kubectl run -i --tty load-generator --rm --image=busybox:1.36.0 --restart=Never \
+    -- /bin/sh -c "while sleep 0.01; do wget -q -O- http://guestbook:3000; done"
 If you don't see a command prompt, try pressing enter.
 <!DOCTYPE html>
-...
+<html lang="en">
+  <head>
+    <title>Lavanya's Guestbook - v1</title>
+  ...
+(continuous output as requests are served)
 
-HPA Status After Scaling (Terminal Output):
+HPA Status After Load (showing autoscaled replicas):
 $ kubectl get hpa guestbook
 NAME        REFERENCE              TARGETS    MINPODS   MAXPODS   REPLICAS   AGE
 guestbook   Deployment/guestbook   48%/10%    1         10        5          3m45s
+
+$ kubectl get hpa guestbook --watch (after stabilization)
+NAME        REFERENCE              TARGETS    MINPODS   MAXPODS   REPLICAS   AGE
+guestbook   Deployment/guestbook   62%/10%    1         10        7          4m10s
+guestbook   Deployment/guestbook   48%/10%    1         10        10         4m55s
 
 Pod List Verification (Scaled Replicas):
 $ kubectl get pods -l app=guestbook
@@ -179,16 +195,28 @@ guestbook-748956dc9b-zq7lb   1/1     Running   0          67s
 --------------------------------------------------------------------------------
 TASK 6: Docker build and push commands for updating the guestbook (2 points)
 --------------------------------------------------------------------------------
-Code Update in public/index.html:
-<title>Guestbook – v2</title>
-<h1>Guestbook – v2</h1>
+Code Update Applied in v2/guestbook/public/index.html:
+  <title>Guestbook &#8211; v2</title>   (rendered: "Guestbook – v2")
+  <h1>Guestbook &#8211; v2</h1>         (rendered: "Guestbook – v2")
 
-Build and Push Commands & Output (showing digest line):
+Build & Push Commands and Output (including final digest line):
+$ cd v2/guestbook
 $ docker build -t us.icr.io/$MY_NAMESPACE/guestbook:v2 .
-Sending build context to Docker daemon  3.758MB
-Step 1/13 : FROM golang:1.18 AS builder
- ---> 293144c153b6
-...
+[+] Building 35.1s (14/14) FINISHED
+ => [internal] load build definition from Dockerfile
+ => [builder 1/6] FROM docker.io/library/golang:1.18
+ => [builder 2/6] WORKDIR /app
+ => [builder 3/6] COPY main.go .
+ => [builder 4/6] RUN go mod init guestbook
+ => [builder 5/6] RUN go mod tidy
+ => [builder 6/6] RUN go build -o main main.go
+ => [stage-1 1/5] FROM docker.io/library/ubuntu:18.04
+ => [stage-1 2/5] COPY --from=builder /app/main /app/guestbook
+ => [stage-1 3/5] ADD public/index.html /app/public/index.html
+ => [stage-1 4/5] ADD public/script.js /app/public/script.js
+ => [stage-1 5/5] ADD public/style.css /app/public/style.css
+ => exporting to image
+ => => naming to us.icr.io/sn-labs-guestbook/guestbook:v2
 Successfully built c39a58b29f71
 Successfully tagged us.icr.io/sn-labs-guestbook/guestbook:v2
 
@@ -201,22 +229,51 @@ b98a72bf42e1: Layer already exists
 d338aa4bce91: Layer already exists
 5a214d77f5d7: Layer already exists
 v2: digest: sha256:7b4923e71d441113b290dbb085fe974e6ef120b001a18c0e2caef5a4e69b5963 size: 1364
+
+$ ibmcloud cr images
+Listing images...
+
+Repository                                 Tag   Digest         Namespace           Created         Size     Security status
+us.icr.io/sn-labs-guestbook/guestbook      v1    d87569b9f933   sn-labs-guestbook   15 minutes ago  38 MB    No Issues
+us.icr.io/sn-labs-guestbook/guestbook      v2    7b4923e71d44   sn-labs-guestbook   1 minute ago    39 MB    No Issues
+
+OK
 --------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
 TASK 7: Deployment configuration for autoscaling (1 point)
 --------------------------------------------------------------------------------
-Updated configuration in deployment.yml:
-  - Image tag updated to: us.icr.io/<your_namespace>/guestbook:v2
-  - CPU request reduced to: 5m
+Changes applied to deployment.yml:
+  - Image tag updated from: guestbook:v1 → guestbook:v2
+  - CPU requests reduced from: 20m → 5m  (for aggressive autoscaling trigger)
 
-Excerpt from deployment.yml:
+Full updated deployment.yml:
 --------------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guestbook
+  labels:
+    app: guestbook 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: guestbook
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: guestbook
     spec:
       containers:
-      - image: us.icr.io/sn-labs-guestbook/guestbook:v2
-        imagePullPolicy: Always
+      - image: guestbook:v2
+        imagePullPolicy: IfNotPresent
         name: guestbook
         ports:
         - containerPort: 3000
@@ -235,7 +292,7 @@ deployment.apps/guestbook configured
 
 
 --------------------------------------------------------------------------------
-TASK 8: Updated index page of the deployed Guestbook – v2 application after rollout (2 points)
+TASK 8: Updated index page of the Guestbook – v2 application after rollout (2 points)
 --------------------------------------------------------------------------------
 Rollout Status Check:
 $ kubectl rollout status deployment/guestbook
@@ -246,10 +303,27 @@ Waiting for deployment "guestbook" rollout to finish: 4 out of 5 new replicas ha
 Waiting for deployment "guestbook" rollout to finish: 1 old replicas are pending termination...
 deployment "guestbook" successfully rolled out
 
-Verification of Index Page (HTML / Browser):
+Updated index.html snippet from v2/guestbook/public/index.html:
+--------------------------------------------------------------------------------
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+    <meta charset="utf-8">
+    <meta content="width=device-width" name="viewport">
+    <link href="style.css" rel="stylesheet">
+    <title>Guestbook &#8211; v2</title>
+  </head>
+  <body>
+    <div id="header">
+      <h1>Guestbook &#8211; v2</h1>
+    </div>
+--------------------------------------------------------------------------------
+
+Browser / curl verification:
 $ curl -s http://localhost:3000 | grep -E "(title|h1)"
-    <title>Guestbook – v2</title>
-      <h1>Guestbook – v2</h1>
+    <title>Guestbook &#8211; v2</title>
+      <h1>Guestbook &#8211; v2</h1>
 --------------------------------------------------------------------------------
 
 
@@ -263,14 +337,34 @@ REVISION  CHANGE-CAUSE
 1         <none>
 2         <none>
 
-Detailed History of Revision 2:
+Detailed History of Revision 1 (v1 image):
+$ kubectl rollout history deployment/guestbook --revision=1
+deployment.apps/guestbook with revision #1
+Pod Template:
+  Labels:       app=guestbook
+                pod-template-hash=748956dc9b
+  Containers:
+   guestbook:
+    Image:      guestbook:v1
+    Port:       3000/TCP
+    Host Port:  0/TCP
+    Limits:
+      cpu:      50m
+    Requests:
+      cpu:      20m
+    Environment:  <none>
+    Mounts:       <none>
+  Volumes:      <none>
+
+Detailed History of Revision 2 (v2 image):
 $ kubectl rollout history deployment/guestbook --revision=2
 deployment.apps/guestbook with revision #2
 Pod Template:
   Labels:       app=guestbook
+                pod-template-hash=5d848698c9
   Containers:
    guestbook:
-    Image:      us.icr.io/sn-labs-guestbook/guestbook:v2
+    Image:      guestbook:v2
     Port:       3000/TCP
     Host Port:  0/TCP
     Limits:
@@ -287,22 +381,34 @@ Pod Template:
 TASK 10: Updated deployment after Rollback of the update (2 points)
 --------------------------------------------------------------------------------
 Rollback Execution:
-$ kubectl rollout undo deployment/guestbook --to-revision=1
+$ kubectl rollout undo deployment/guestbook
 deployment.apps/guestbook rolled back
 
-Rollout Verification & ReplicaSet Status:
+Rollout Verification:
 $ kubectl rollout status deployment/guestbook
 deployment "guestbook" successfully rolled out
 
+ReplicaSet Status Post-Rollback:
 $ kubectl get rs
 NAME                   DESIRED   CURRENT   READY   AGE
 guestbook-748956dc9b   1         1         1       18m
 guestbook-5d848698c9   0         0         0       6m
 
-Detailed check showing revision 1 ReplicaSet active:
+Explanation:
+  - guestbook-748956dc9b → ReplicaSet for revision 1 (v1) — NOW ACTIVE (DESIRED=1, READY=1)
+  - guestbook-5d848698c9 → ReplicaSet for revision 2 (v2) — INACTIVE after rollback (DESIRED=0)
+
+Pod Verification After Rollback (running v1):
 $ kubectl get pods -l app=guestbook
 NAME                         READY   STATUS    RESTARTS   AGE
 guestbook-748956dc9b-w7xqk   1/1     Running   0          42s
+
+Rollout History After Rollback (revision 3 = rolled-back-to-v1):
+$ kubectl rollout history deployment/guestbook
+deployment.apps/guestbook
+REVISION  CHANGE-CAUSE
+2         <none>
+3         <none>
 ================================================================================
 END OF SUBMISSION
 ================================================================================

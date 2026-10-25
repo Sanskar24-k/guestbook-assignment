@@ -20,8 +20,8 @@ spec:
         app: guestbook
     spec:
       containers:
-      - image: us.icr.io/sn-labs-guestbook/guestbook:v1
-        imagePullPolicy: Always
+      - image: guestbook:v2
+        imagePullPolicy: IfNotPresent
         name: guestbook
         ports:
         - containerPort: 3000
@@ -30,4 +30,4 @@ spec:
           limits:
             cpu: 50m
           requests:
-            cpu: 20m
+            cpu: 5m

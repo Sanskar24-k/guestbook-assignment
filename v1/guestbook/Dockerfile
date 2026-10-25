@@ -12,5 +12,5 @@ COPY public/style.css /app/public/style.css
 COPY public/jquery.min.js /app/public/jquery.min.js
 
 WORKDIR /app
-CMD ["./guestbook"]
 EXPOSE 3000
+CMD ["./guestbook"]
